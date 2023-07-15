@@ -6,7 +6,7 @@ var session = require('express-session');
 var csrf = require('csurf');
 var passport = require('passport');
 var logger = require('morgan');
-
+const validator=require('express-validator')
 // pass the session to the connect sqlite3 module
 // allowing it to inherit from session.Store
 var SQLiteStore = require('connect-sqlite3')(session);
@@ -26,6 +26,8 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(validator())
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: 'keyboard cat',
@@ -42,8 +44,16 @@ app.use(function(req, res, next) {
   req.session.messages = [];
   next();
 });
-app.use(function(req, res, next) {
-  res.locals.csrfToken = req.csrfToken();
+app.use(function (req, res, next) {
+  var token = req.csrfToken();
+  res.cookie('XSRF-TOKEN', token);
+  res.locals.csrfToken = token;
+  next();
+});
+
+app.use(function (req, res, next) {
+  res.locals.currentUser = req.user;
+  res.locals.session = req.session;
   next();
 });
 
